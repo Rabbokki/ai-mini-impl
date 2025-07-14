@@ -1,0 +1,51 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+.ENV/
+
+# Python tool configs
+*.egg-info/
+dist/
+build/
+pip-wheel-metadata/
+
+# Jupyter Notebook checkpoints (혹시 쓸 경우)
+.ipynb_checkpoints/
+
+# IDE / Editor 설정
+.vscode/
+.idea/
+*.swp
+
+# OS 파일
+.DS_Store
+Thumbs.db
+
+# dotenv 환경 변수 파일
+.env
+.env.*
+
+# 로그 / 캐시
+*.log
+.cache/
+*.tmp
+
+# Whisper 관련 큰 파일들 (선택)
+*.wav
+*.mp3
+*.m4a
+*.flac
+
+# OpenAI 응답 결과 캐시 (선택)
+openai_cache.json
+
+# 기타 백업 파일
+*.bak
+*.old
