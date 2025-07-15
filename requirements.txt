@@ -1,0 +1,16 @@
+openai-whisper==20231117
+torch
+numpy
+
+# FastAPI 관련 의존성
+fastapi
+uvicorn[standard]
+pydantic
+
+# MongoDB 관련 의존성
+pymongo
+motor
+
+# 추가 유틸리티
+python-dotenv
+python-multipart
