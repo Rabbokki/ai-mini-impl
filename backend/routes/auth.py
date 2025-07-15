@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -71,8 +70,7 @@ async def register(user: UserCreate):
     # DB에 사용자 추가
     result = users.insert_one(new_user)
     
-    return {"message": "회원가입이 완료되었습니다", "user_id": str(result.inserted_id)}
-
+    return {"message": "회원가입이 완료되었습니다", "user_id": simple_id}
 
 @router.post("/login", response_model=Token)
 async def login(user_credentials: UserLogin):
