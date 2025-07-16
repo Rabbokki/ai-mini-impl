@@ -11,6 +11,17 @@ db = client['mini_project']  # 데이터베이스 이름
 
 # 컬렉션 정의
 users = db['users']  # 사용자 컬렉션
+counters = db['counters']  # ID 카운터 컬렉션
+
+def get_next_user_id():
+    """다음 사용자 ID를 생성합니다 (1, 2, 3, ...)"""
+    result = counters.find_one_and_update(
+        {"_id": "user_id"},
+        {"$inc": {"sequence_value": 1}},
+        upsert=True,
+        return_document=True
+    )
+    return result["sequence_value"]
 
 
 
