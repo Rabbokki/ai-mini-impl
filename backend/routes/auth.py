@@ -11,16 +11,21 @@ class UserCreate(BaseModel):
     username: str
     password: str
     email: str
+    birth_date: str  # YYYY-MM-DD 형식으로 입력
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
     email: Optional[str] = None
+    birth_date: Optional[str] = None  # YYYY-MM-DD 형식으로 입력
+    is_subscribe: Optional[bool] = None  # 구독 상태 변경
 
 class UserResponse(BaseModel):
     id: str
     username: str
     email: str
+    birth_date: str
+    is_subscribe: bool
     created_at: datetime
 
 @router.post("/register")
@@ -34,6 +39,8 @@ async def register(user: UserCreate):
         "username": user.username,
         "password": user.password,  # 실제 프로젝트에서는 반드시 암호화해야 합니다!
         "email": user.email,
+        "birth_date": user.birth_date,
+        "is_subscribe": False,  # 회원가입 시 기본값은 구독하지 않음
         "created_at": datetime.utcnow()
     }
     
@@ -53,6 +60,8 @@ async def get_all_users():
             "id": str(user["_id"]),
             "username": user["username"],
             "email": user["email"],
+            "birth_date": user.get("birth_date", ""),
+            "is_subscribe": user.get("is_subscribe", False),
             "created_at": user["created_at"]
         }
         user_list.append(user_data)
@@ -76,6 +85,8 @@ async def get_user_by_id(user_id: str):
             "id": str(user["_id"]),
             "username": user["username"],
             "email": user["email"],
+            "birth_date": user.get("birth_date", ""),
+            "is_subscribe": user.get("is_subscribe", False),
             "created_at": user["created_at"]
         }
     except Exception as e:
@@ -93,6 +104,8 @@ async def get_user_by_username(username: str):
         "id": str(user["_id"]),
         "username": user["username"],
         "email": user["email"],
+        "birth_date": user.get("birth_date", ""),
+        "is_subscribe": user.get("is_subscribe", False),
         "created_at": user["created_at"]
     }
 
@@ -126,6 +139,12 @@ async def update_user(user_id: str, user_update: UserUpdate):
             
         if user_update.email is not None:
             update_data["email"] = user_update.email
+            
+        if user_update.birth_date is not None:
+            update_data["birth_date"] = user_update.birth_date
+            
+        if user_update.is_subscribe is not None:
+            update_data["is_subscribe"] = user_update.is_subscribe
         
         if not update_data:
             raise HTTPException(status_code=400, detail="수정할 데이터가 없습니다")
@@ -146,13 +165,15 @@ async def update_user(user_id: str, user_update: UserUpdate):
         updated_user = users.find_one({"_id": ObjectId(user_id)})
         return {
             "message": "사용자 정보가 수정되었습니다",
-            "user": {
-                "id": str(updated_user["_id"]) if updated_user and "_id" in updated_user else None,
-                "username": updated_user["username"] if updated_user and "username" in updated_user else None,
-                "email": updated_user["email"] if updated_user and "email" in updated_user else None,
-                "created_at": updated_user["created_at"] if updated_user and "created_at" in updated_user else None,
-                "updated_at": updated_user.get("updated_at") if updated_user else None
-            }
+                         "user": {
+                 "id": str(updated_user["_id"]) if updated_user and "_id" in updated_user else None,
+                 "username": updated_user["username"] if updated_user and "username" in updated_user else None,
+                 "email": updated_user["email"] if updated_user and "email" in updated_user else None,
+                 "birth_date": updated_user.get("birth_date", "") if updated_user else None,
+                 "is_subscribe": updated_user.get("is_subscribe", False) if updated_user else None,
+                 "created_at": updated_user["created_at"] if updated_user and "created_at" in updated_user else None,
+                 "updated_at": updated_user.get("updated_at") if updated_user else None
+             }
         }
         
     except HTTPException:
