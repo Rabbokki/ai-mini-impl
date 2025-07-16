@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
+import os
 
 from routes.posts import router as posts_router
 from database.mongodb import init_mongodb
@@ -20,6 +22,13 @@ app = FastAPI(
 async def startup_event():
     """애플리케이션 시작 시 실행"""
     print("애플리케이션을 시작합니다...")
+    
+    # 업로드 폴더 생성
+    upload_dirs = ["uploads/images", "uploads/temp"]
+    for directory in upload_dirs:
+        os.makedirs(directory, exist_ok=True)
+        print(f"[OK] 업로드 폴더 생성: {directory}")
+    
     success = init_mongodb()
     if success:
         print("[OK] MongoDB 연결 성공")
@@ -34,6 +43,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 정적 파일 서빙 설정 (업로드된 이미지 파일 제공)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # 라우터 등록
 app.include_router(posts_router)

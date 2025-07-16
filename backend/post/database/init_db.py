@@ -2,8 +2,8 @@
 """
 MongoDB 데이터베이스 초기화 스크립트
 
-이 스크립트는 mini_blog 데이터베이스와 posts 컬렉션을 생성하고 
-필요한 인덱스를 설정합니다.
+이 스크립트는 캘린더 일기장 데이터베이스와 posts 컬렉션을 생성하고 
+필요한 인덱스를 설정합니다. (샘플 데이터는 생성하지 않음)
 
 사용법:
     python init_db.py
@@ -18,58 +18,55 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from mongodb import MongoDB
 
-def create_sample_posts(mongodb: MongoDB):
-    """샘플 글 데이터 생성"""
-    try:
-        collection = mongodb.get_posts_collection()
-        
-        # 기존 데이터 확인
-        existing_count = collection.count_documents({})
-        if existing_count > 0:
-            print(f"이미 {existing_count}개의 글이 존재합니다.")
-            return
-        
-        # 샘플 데이터
-        sample_posts = [
-            {
-                "post_id": "sample-post-1",
-                "title": "첫 번째 글",
-                "content": "안녕하세요! 이것은 첫 번째 샘플 글입니다.",
-                "author": "관리자",
-                "status": "published",
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
-            },
-            {
-                "post_id": "sample-post-2", 
-                "title": "두 번째 글",
-                "content": "MongoDB를 사용한 글 관리 시스템 테스트입니다.",
-                "author": "테스터",
-                "status": "published",
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
-            },
-            {
-                "post_id": "sample-post-3",
-                "title": "삭제될 글",
-                "content": "이 글은 삭제된 상태로 표시됩니다.",
-                "author": "테스터",
-                "status": "deleted",
-                "created_at": datetime.now(),
-                "updated_at": datetime.now()
-            }
-        ]
-        
-        # 샘플 데이터 삽입
-        result = collection.insert_many(sample_posts)
-        print(f"[OK] {len(result.inserted_ids)}개의 샘플 글이 생성되었습니다.")
-        
-        # 삽입된 데이터 확인
-        for post in sample_posts:
-            print(f"   - {post['title']} (상태: {post['status']})")
-            
-    except Exception as e:
-        print(f"[ERROR] 샘플 데이터 생성 실패: {e}")
+# def create_sample_posts(mongodb: MongoDB):
+#     """샘플 글 데이터 생성 - 일기장에서는 사용하지 않음"""
+#     try:
+#         collection = mongodb.get_posts_collection()
+#         
+#         # 기존 데이터 확인
+#         existing_count = collection.count_documents({})
+#         if existing_count > 0:
+#             print(f"이미 {existing_count}개의 글이 존재합니다.")
+#             return
+#         
+#         # 샘플 데이터
+#         sample_posts = [
+#             {
+#                 "post_id": "sample-post-1",
+#                 "title": "첫 번째 일기",
+#                 "content": "오늘은 새로운 일기장을 시작하는 날입니다!",
+#                 "status": "published",
+#                 "created_at": datetime.now(),
+#                 "updated_at": datetime.now()
+#             },
+#             {
+#                 "post_id": "sample-post-2", 
+#                 "title": "두 번째 일기",
+#                 "content": "캘린더 형식의 일기장이 완성되었습니다.",
+#                 "status": "published",
+#                 "created_at": datetime.now(),
+#                 "updated_at": datetime.now()
+#             },
+#             {
+#                 "post_id": "sample-post-3",
+#                 "title": "삭제될 일기",
+#                 "content": "이 일기는 삭제된 상태로 표시됩니다.",
+#                 "status": "deleted",
+#                 "created_at": datetime.now(),
+#                 "updated_at": datetime.now()
+#             }
+#         ]
+#         
+#         # 샘플 데이터 삽입
+#         result = collection.insert_many(sample_posts)
+#         print(f"[OK] {len(result.inserted_ids)}개의 샘플 글이 생성되었습니다.")
+#         
+#         # 삽입된 데이터 확인
+#         for post in sample_posts:
+#             print(f"   - {post['title']} (상태: {post['status']})")
+#             
+#     except Exception as e:
+#         print(f"[ERROR] 샘플 데이터 생성 실패: {e}")
 
 def verify_setup(mongodb: MongoDB):
     """설정 검증"""
@@ -107,7 +104,7 @@ def verify_setup(mongodb: MongoDB):
 
 def main():
     """메인 함수"""
-    print("MongoDB 데이터베이스 초기화를 시작합니다...\n")
+    print("캘린더 일기장 데이터베이스 초기화를 시작합니다...\n")
     
     # MongoDB 인스턴스 생성
     mongodb = MongoDB()
@@ -128,18 +125,17 @@ def main():
         # 2. 컬렉션 및 인덱스 설정 (이미 connect()에서 수행됨)
         print("2. 컬렉션 및 인덱스 설정 완료")
         
-        # 3. 샘플 데이터 생성
-        print("3. 샘플 데이터 생성 중...")
-        create_sample_posts(mongodb)
+        # 3. 데이터베이스 준비 완료 (샘플 데이터 생성 안함)
+        print("3. 일기장 데이터베이스 준비 완료")
         
         # 4. 설정 검증
         print("4. 설정 검증 중...")
         if verify_setup(mongodb):
-            print("\n[SUCCESS] MongoDB 데이터베이스 초기화가 완료되었습니다!")
+            print("\n[SUCCESS] 캘린더 일기장 데이터베이스 초기화가 완료되었습니다!")
             print("\n다음 단계:")
             print("   1. FastAPI 애플리케이션을 실행하세요: python app.py")
             print("   2. API 문서를 확인하세요: http://localhost:8000/docs")
-            print("   3. 글 작성 테스트를 해보세요!")
+            print("   3. 첫 번째 일기를 작성해보세요!")
         else:
             print("\n[ERROR] 설정 검증에 실패했습니다.")
             sys.exit(1)

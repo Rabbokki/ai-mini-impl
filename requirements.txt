@@ -14,3 +14,4 @@ motor
 # 추가 유틸리티
 python-dotenv
 python-multipart
+aiofiles
