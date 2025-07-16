@@ -116,7 +116,7 @@ async def get_all_users():
     
     for user in all_users:
         user_data = {
-            "id": user.get("id", str(user["_id"])),
+            "id": user.get("id", str(user["_id"])),  # 단순 ID 우선, 없으면 ObjectId
             "username": user["username"],
             "email": user["email"],
             "birth_date": user.get("birth_date", ""),
