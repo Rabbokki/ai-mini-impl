@@ -1,13 +1,16 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, UploadFile, File
 from typing import List
 from datetime import datetime
 import uuid
+import os
 
 from models.post import (
-    PostCreate, PostUpdate, PostListResponse,
-    PostCreateResponse, PostUpdateResponse, PostDeleteResponse, PostStatus
+    PostCreate, PostUpdate, PostListResponse, PostDetailResponse,
+    PostCreateResponse, PostUpdateResponse, PostDeleteResponse, PostStatus,
+    ImageUploadResponse, ImageDeleteResponse, ImageInfo
 )
 from database.mongodb import get_mongodb
+from utils.image_utils import image_utils
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -26,29 +29,61 @@ async def create_post(post_data: PostCreate):
                     detail="데이터베이스 연결에 실패했습니다"
                 )
         
+        collection = mongodb.get_posts_collection()
+        if collection is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="데이터베이스 컬렉션을 가져올 수 없습니다"
+            )
+        
         # 새로운 글 ID 생성
         post_id = str(uuid.uuid4())
         
         # 현재 시간
         current_time = datetime.now()
         
+        # 이미지 처리
+        images_info = []
+        if post_data.images:
+            for temp_filename in post_data.images:
+                try:
+                    # 임시 파일을 정식 업로드 폴더로 이동
+                    permanent_filename = image_utils.move_temp_to_permanent(temp_filename, post_id)
+                    
+                    # 이미지 정보 저장
+                    file_info = image_utils.get_file_info(permanent_filename)
+                    images_info.append({
+                        "filename": permanent_filename,
+                        "original_filename": temp_filename,
+                        "file_path": os.path.join("uploads/images", permanent_filename),
+                        "file_size": file_info["file_size"] if file_info else 0,
+                        "upload_date": current_time
+                    })
+                except HTTPException:
+                    # 임시 파일 이동 실패 시 다른 임시 파일들 정리
+                    for temp_file in post_data.images:
+                        image_utils.delete_temp_file(temp_file)
+                    raise
+        
         # 글 데이터 저장
         new_post = {
             "id": post_id,
             "title": post_data.title,
             "content": post_data.content,
-            "author": post_data.author,
             "status": post_data.status,
+            "images": images_info,
             "created_at": current_time,
             "updated_at": current_time
         }
         
         # MongoDB 문서 생성 및 저장
         document = mongodb.create_post_document(new_post)
-        collection = mongodb.get_posts_collection()
         result = collection.insert_one(document)
         
         if not result.inserted_id:
+            # 저장 실패 시 업로드된 이미지들 삭제
+            for img_info in images_info:
+                image_utils.delete_permanent_file(img_info["filename"])
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="글 저장에 실패했습니다"
@@ -80,6 +115,11 @@ async def get_posts():
                 )
         
         collection = mongodb.get_posts_collection()
+        if collection is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="데이터베이스 컬렉션을 가져올 수 없습니다"
+            )
         
         # 게시된 글만 조회 (삭제되지 않은 글)
         query = {"status": {"$ne": PostStatus.DELETED}}
@@ -87,13 +127,24 @@ async def get_posts():
         
         posts = []
         for doc in cursor:
+            # 이미지 정보 변환
+            images = []
+            for img_data in doc.get("images", []):
+                images.append(ImageInfo(
+                    filename=img_data["filename"],
+                    original_filename=img_data["original_filename"],
+                    file_path=img_data["file_path"],
+                    file_size=img_data["file_size"],
+                    upload_date=img_data["upload_date"]
+                ))
+            
             posts.append(PostListResponse(
                 id=doc["post_id"],
                 title=doc["title"],
-                author=doc["author"],
                 status=doc["status"],
                 created_at=doc["created_at"],
-                updated_at=doc["updated_at"]
+                updated_at=doc["updated_at"],
+                images=images
             ))
         
         return posts
@@ -223,6 +274,107 @@ async def delete_post(post_id: str):
             detail=f"글 삭제 중 오류가 발생했습니다: {str(e)}"
         )
 
+@router.post("/images/upload", response_model=ImageUploadResponse)
+async def upload_temp_image(file: UploadFile = File(...)):
+    """임시 이미지 업로드 (최대 3장, 5MB 제한)"""
+    try:
+        # 임시 폴더에 이미지 저장
+        temp_filename, file_size = await image_utils.save_temp_image(file)
+        
+        return ImageUploadResponse(
+            message="이미지가 임시로 업로드되었습니다",
+            filename=temp_filename,
+            file_size=file_size
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"이미지 업로드 중 오류가 발생했습니다: {str(e)}"
+        )
+
+@router.delete("/images/temp/{filename}", response_model=ImageDeleteResponse)
+async def delete_temp_image(filename: str):
+    """임시 이미지 삭제 (업로드 취소)"""
+    try:
+        image_utils.delete_temp_file(filename)
+        
+        return ImageDeleteResponse(
+            message="임시 이미지가 삭제되었습니다",
+            filename=filename
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"이미지 삭제 중 오류가 발생했습니다: {str(e)}"
+        )
+
+@router.get("/{post_id}", response_model=PostDetailResponse)
+async def get_post_detail(post_id: str):
+    """글 상세 조회"""
+    try:
+        # MongoDB 연결 확인
+        if not mongodb.check_connection():
+            if not mongodb.connect():
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="데이터베이스 연결에 실패했습니다"
+                )
+        
+        collection = mongodb.get_posts_collection()
+        if not collection:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="데이터베이스 컬렉션을 가져올 수 없습니다"
+            )
+        
+        # 글 조회
+        post_doc = collection.find_one({"post_id": post_id})
+        if not post_doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="해당 글을 찾을 수 없습니다"
+            )
+        
+        # 삭제된 글은 조회 불가
+        if post_doc["status"] == PostStatus.DELETED:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="해당 글을 찾을 수 없습니다"
+            )
+        
+        # 이미지 정보 변환
+        images = []
+        for img_data in post_doc.get("images", []):
+            images.append(ImageInfo(
+                filename=img_data["filename"],
+                original_filename=img_data["original_filename"],
+                file_path=img_data["file_path"],
+                file_size=img_data["file_size"],
+                upload_date=img_data["upload_date"]
+            ))
+        
+        return PostDetailResponse(
+            id=post_doc["post_id"],
+            title=post_doc["title"],
+            content=post_doc["content"],
+            status=post_doc["status"],
+            created_at=post_doc["created_at"],
+            updated_at=post_doc["updated_at"],
+            images=images
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"글 조회 중 오류가 발생했습니다: {str(e)}"
+        )
+
 @router.get("/health", status_code=status.HTTP_200_OK)
 async def health_check():
     """헬스 체크"""
@@ -231,6 +383,13 @@ async def health_check():
             mongodb.connect()
         
         collection = mongodb.get_posts_collection()
+        if not collection:
+            return {
+                "status": "unhealthy", 
+                "database": "collection_error",
+                "error": "컬렉션을 가져올 수 없습니다"
+            }
+        
         total_posts = collection.count_documents({})
         published_posts = collection.count_documents({"status": PostStatus.PUBLISHED})
         

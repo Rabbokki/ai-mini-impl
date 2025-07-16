@@ -49,6 +49,10 @@ class MongoDB:
     def _initialize_collection(self):
         """posts 컬렉션 초기화 및 인덱스 설정"""
         try:
+            if self.posts_collection is None:
+                logger.error("posts_collection이 초기화되지 않았습니다")
+                return
+                
             # 기존 인덱스 확인
             existing_indexes = list(self.posts_collection.list_indexes())
             index_names = [index['name'] for index in existing_indexes]
@@ -68,13 +72,7 @@ class MongoDB:
                     ("status", ASCENDING)
                 )
             
-            # 3. author 인덱스 (작성자별 조회용)
-            if 'author_asc' not in index_names:
-                indexes_to_create.append(
-                    ("author", ASCENDING)
-                )
-            
-            # 4. 복합 인덱스: status + created_at (효율적인 게시글 목록 조회용)
+            # 3. 복합 인덱스: status + created_at (효율적인 게시글 목록 조회용)
             if 'status_created_at_compound' not in index_names:
                 indexes_to_create.append(
                     [("status", ASCENDING), ("created_at", DESCENDING)]
@@ -122,6 +120,7 @@ class MongoDB:
             "content": post_data["content"],
             "author": post_data["author"],
             "status": post_data["status"],
+            "images": post_data.get("images", []),  # 이미지 정보 목록
             "created_at": post_data["created_at"],
             "updated_at": post_data["updated_at"]
         }
@@ -129,8 +128,11 @@ class MongoDB:
     def get_database_info(self) -> dict:
         """데이터베이스 정보 반환"""
         try:
-            if not self.db:
+            if self.db is None:
                 return {"error": "데이터베이스에 연결되지 않음"}
+            
+            if self.posts_collection is None:
+                return {"error": "컬렉션이 초기화되지 않음"}
             
             # 컬렉션 통계
             stats = self.db.command("collStats", self.posts_collection_name)
