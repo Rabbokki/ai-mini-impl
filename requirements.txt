@@ -15,6 +15,11 @@ pydantic
 pymongo
 motor
 
+# 인증 관련 의존성
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+
 # 추가 유틸리티
 python-dotenv
 python-multipart

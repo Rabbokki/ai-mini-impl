@@ -4,13 +4,13 @@ from datetime import datetime
 import uuid
 import os
 
-from models.post import (
+from ..models.post import (
     PostCreate, PostUpdate, PostListResponse, PostDetailResponse,
     PostCreateResponse, PostUpdateResponse, PostDeleteResponse, PostStatus,
     ImageUploadResponse, ImageDeleteResponse, ImageInfo
 )
-from database.mongodb import get_mongodb
-from utils.image_utils import image_utils
+from ..database.mongodb import get_mongodb
+from ..utils.image_utils import image_utils
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
