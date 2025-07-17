@@ -298,11 +298,6 @@
                         <textarea id="content" name="content" required placeholder="오늘 하루 어떠셨나요?"></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="author">작성자:</label>
-                        <input type="text" id="author" name="author" required>
-                    </div>
-                    
                     <button type="submit" class="btn btn-success">일기 작성하기</button>
                     <button type="button" class="btn btn-danger" onclick="clearForm()">초기화</button>
                 </form>
@@ -455,12 +450,10 @@
             
             const title = document.getElementById('title').value;
             const content = document.getElementById('content').value;
-            const author = document.getElementById('author').value;
             
             const postData = {
                 title: title,
                 content: content,
-                author: author,
                 images: tempImages.map(img => img.filename)
             };
 
@@ -536,7 +529,6 @@
                 <div class="post-item" onclick="showPostDetail('${post.id}')">
                     <div class="post-title">${post.title}</div>
                     <div class="post-meta">
-                        작성자: ${post.author} | 
                         작성일: ${new Date(post.created_at).toLocaleDateString('ko-KR')}
                         ${post.images && post.images.length > 0 ? ` | 이미지 ${post.images.length}장` : ''}
                     </div>
@@ -563,7 +555,6 @@
                     const modalContent = `
                         <h2>${post.title}</h2>
                         <div class="post-meta" style="margin-bottom: 20px;">
-                            작성자: ${post.author} | 
                             작성일: ${new Date(post.created_at).toLocaleString('ko-KR')}
                         </div>
                         <div style="white-space: pre-wrap; margin-bottom: 20px;">${post.content}</div>

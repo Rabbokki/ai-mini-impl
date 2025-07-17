@@ -1,6 +1,6 @@
-# 캘린더 일기장 API - MongoDB 설정 가이드
+# Mini Blog API - MongoDB 설정 가이드
 
-캘린더 형식의 일기 작성, 조회, 수정, 삭제 기능과 이미지 업로드(최대 3장, 5MB)를 지원하는 FastAPI 기반 REST API입니다.
+블로그 글 작성, 조회, 수정, 삭제 기능과 이미지 업로드(최대 3장, 5MB)를 지원하는 FastAPI 기반 REST API입니다.
 
 ## 📋 요구사항
 
@@ -75,10 +75,10 @@ python app.py
 ```javascript
 {
   "_id": ObjectId("..."),           // MongoDB 고유 ID
-  "post_id": "uuid-string",         // FastAPI에서 사용하는 일기 ID
-  "title": "일기 제목",              // 일기 제목 (최대 100자)
-  "content": "일기 내용",            // 일기 내용
-  "status": "published|deleted",    // 일기 상태
+  "post_id": "uuid-string",         // FastAPI에서 사용하는 글 ID
+  "title": "글 제목",                // 글 제목 (최대 100자)
+  "content": "글 내용",              // 글 내용
+  "status": "published|deleted",    // 글 상태
   "images": [                       // 첨부 이미지 목록
     {
       "filename": "uuid_filename.jpg",
@@ -95,9 +95,9 @@ python app.py
 
 ### 인덱스 설정
 
-1. **created_at_desc**: 최신 일기 조회용 (캘린더 정렬)
-2. **status_asc**: 일기 상태별 조회용  
-3. **status_created_at_compound**: 효율적인 일기 목록 조회용
+1. **created_at_desc**: 최신 글 조회용 (날짜별 정렬)
+2. **status_asc**: 글 상태별 조회용  
+3. **status_created_at_compound**: 효율적인 글 목록 조회용
 
 ## 🔧 환경변수 설정
 
@@ -106,29 +106,29 @@ python app.py
 ```bash
 # MongoDB 설정
 MONGODB_URL=mongodb://localhost:27017
-DATABASE_NAME=diary_calendar
+DATABASE_NAME=mini_blog
 
 # FastAPI 설정  
 API_HOST=0.0.0.0
 API_PORT=8000
 DEBUG=True
-
-# 이미지 업로드 설정
-MAX_IMAGE_SIZE=5MB
-MAX_IMAGES_PER_POST=3
-ALLOWED_IMAGE_TYPES=jpg,jpeg,png,gif,webp
 ```
+
+**이미지 업로드 설정 (코드에서 하드코딩됨):**
+- 최대 이미지 크기: 5MB
+- 글당 최대 이미지 수: 3장
+- 지원 형식: JPG, JPEG, PNG, GIF, WebP
 
 ## 📚 API 엔드포인트
 
-### 일기 관리
+### 글 관리
 | 메서드 | 엔드포인트 | 설명 |
 |--------|------------|------|
-| POST | `/posts/` | 일기 작성 |
-| GET | `/posts/` | 일기 목록 조회 (캘린더용) |
-| GET | `/posts/{post_id}` | 일기 상세 조회 |
-| PUT | `/posts/{post_id}` | 일기 수정 |
-| DELETE | `/posts/{post_id}` | 일기 삭제 |
+| POST | `/posts/` | 글 작성 |
+| GET | `/posts/` | 글 목록 조회 |
+| GET | `/posts/{post_id}` | 글 상세 조회 |
+| PUT | `/posts/{post_id}` | 글 수정 |
+| DELETE | `/posts/{post_id}` | 글 삭제 |
 
 ### 이미지 관리
 | 메서드 | 엔드포인트 | 설명 |
@@ -170,35 +170,35 @@ python app.py --port 8001
 
 `init_db.py` 실행 시:
 
-- 캘린더 일기장 데이터베이스와 컬렉션 생성
+- Mini Blog 데이터베이스와 컬렉션 생성
 - 필요한 인덱스 설정 (날짜, 상태 기반)
-- **샘플 데이터는 생성하지 않음** (깔끔한 빈 일기장으로 시작)
+- **샘플 데이터는 생성하지 않음** (깔끔한 빈 블로그로 시작)
 
-### 📝 첫 번째 일기 작성 예시
+### 📝 첫 번째 글 작성 예시
 
-**1. 이미지 없는 일기 작성:**
+**1. 이미지 없는 글 작성:**
 ```bash
 curl -X POST "http://localhost:8000/posts/" \
 -H "Content-Type: application/json" \
 -d '{
-  "title": "오늘의 일기",
-  "content": "캘린더 일기장 첫 번째 글입니다!",
+  "title": "첫 번째 글",
+  "content": "Mini Blog의 첫 번째 글입니다!",
   "status": "published"
 }'
 ```
 
-**2. 이미지가 있는 일기 작성 워크플로우:**
+**2. 이미지가 있는 글 작성 워크플로우:**
 ```bash
 # Step 1: 임시 이미지 업로드
 curl -X POST "http://localhost:8000/posts/images/upload" \
 -F "file=@my_photo.jpg"
 # 응답: {"filename": "temp_uuid_filename.jpg", ...}
 
-# Step 2: 임시 파일명을 포함하여 일기 작성
+# Step 2: 임시 파일명을 포함하여 글 작성
 curl -X POST "http://localhost:8000/posts/" \
 -H "Content-Type: application/json" \
 -d '{
-  "title": "사진이 있는 일기",
+  "title": "사진이 있는 글",
   "content": "오늘 찍은 사진과 함께",
   "images": ["temp_uuid_filename.jpg"],
   "status": "published"
@@ -217,9 +217,9 @@ curl -X POST "http://localhost:8000/posts/" \
 
 ## 🎯 주요 특징
 
-- ✅ **캘린더 형식**: 날짜별 일기 조회 최적화
-- ✅ **이미지 지원**: 일기당 최대 3장, 5MB 이하
-- ✅ **임시 업로드**: 이미지 미리 업로드 후 일기 작성
+- ✅ **캘린더 형식**: 날짜별 글 조회 최적화
+- ✅ **이미지 지원**: 글당 최대 3장, 5MB 이하
+- ✅ **임시 업로드**: 이미지 미리 업로드 후 글 작성
 - ✅ **상태 관리**: published/deleted 상태로 소프트 삭제
 - ✅ **MongoDB**: NoSQL 기반 확장 가능한 구조
 - ✅ **RESTful API**: 표준 HTTP 메서드 지원 

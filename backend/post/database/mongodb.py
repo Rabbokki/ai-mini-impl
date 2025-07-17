@@ -118,7 +118,6 @@ class MongoDB:
             "post_id": post_data["id"],  # FastAPI에서 사용하는 id를 post_id로 저장
             "title": post_data["title"],
             "content": post_data["content"],
-            "author": post_data["author"],
             "status": post_data["status"],
             "images": post_data.get("images", []),  # 이미지 정보 목록
             "created_at": post_data["created_at"],
