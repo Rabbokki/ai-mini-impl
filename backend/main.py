@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routes.auth import router as auth_router
 from backend.post.routes.posts import router as posts_router
+import uvicorn
 
 # FastAPI 애플리케이션 생성 (Swagger UI 설정 포함)
 app = FastAPI(
@@ -36,5 +37,6 @@ async def root():
         "version": "1.0.0"
     }
 
-
-
+if __name__ == "__main__":
+    print("FastAPI 서버가 시작됩니다. http://localhost:8000/docs 에서 Swagger UI를 확인하실 수 있습니다.")
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
