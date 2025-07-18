@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-# 로깅 설정
-logging.basicConfig(level=logging.INFO)
+# 로깅 설정 (UTF-8 인코딩 보장)
+logging.basicConfig(level=logging.INFO, encoding='utf-8')
 logger = logging.getLogger(__name__)
 
 # 환경 변수 로드
@@ -55,7 +55,8 @@ async def analyze_diary(entry: DiaryEntry):
         메시지는 긍정적이고 공감적인 톤으로, 2-3문장으로 작성해 주세요.
         """
 
-        logger.info(f"Calling OpenAI API with prompt: {prompt[:100]}...")  # 프롬프트 일부 로깅
+        # 프롬프트 로깅 (UTF-8 인코딩 보장)
+        logger.info(f"Calling OpenAI API with prompt: {prompt[:100].encode('utf-8').decode('utf-8')}...")
 
         # OpenAI API 호출
         response = client.chat.completions.create(
@@ -75,7 +76,7 @@ async def analyze_diary(entry: DiaryEntry):
 
         # 위로 메시지 추출
         comfort_message = response.choices[0].message.content.strip()
-        logger.info(f"Received response: {comfort_message}")
+        logger.info(f"Received response: {comfort_message.encode('utf-8').decode('utf-8')}")
 
         return ComfortResponse(message=comfort_message)
 
